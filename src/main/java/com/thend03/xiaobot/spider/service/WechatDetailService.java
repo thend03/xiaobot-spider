@@ -274,7 +274,7 @@ public class WechatDetailService {
         Element element = avatar.get(0);
         String avatarUrl = element.attributes().get("src");
         byte[] bytes = HttpUtil.downloadBytes(avatarUrl);
-        return Base64.getEncoder().encodeToString(bytes);
+        return "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(bytes);
     }
 
     /**
