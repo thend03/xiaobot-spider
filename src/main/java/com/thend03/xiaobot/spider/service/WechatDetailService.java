@@ -12,6 +12,7 @@ import org.jsoup.select.Elements;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -120,7 +121,7 @@ public class WechatDetailService {
         String articleAvatar = getArticleAvatar(avatar);
 
         ArticleDetail articleDetail = new ArticleDetail();
-        articleDetail.setAvatarUrl(articleAvatar);
+        articleDetail.setAvatarBase64(articleAvatar);
 //        articleDetail.setGmtCreate(createdAt);
         articleDetail.setIntroduction(articleIntro);
 //        articleDetail.setFreePostCount(freePostCount);
@@ -271,7 +272,9 @@ public class WechatDetailService {
             return null;
         }
         Element element = avatar.get(0);
-        return element.attributes().get("src");
+        String avatarUrl = element.attributes().get("src");
+        byte[] bytes = HttpUtil.downloadBytes(avatarUrl);
+        return Base64.getEncoder().encodeToString(bytes);
     }
 
     /**

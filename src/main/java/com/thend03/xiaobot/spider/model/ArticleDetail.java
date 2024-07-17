@@ -40,7 +40,7 @@ public class ArticleDetail {
     /**
      * 专栏头像地址
      */
-    private String avatarUrl;
+    private String avatarBase64;
 
     /**
      * 免费文章数量
