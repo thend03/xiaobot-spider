@@ -2,6 +2,7 @@ package com.thend03.xiaobot.spider.service;
 
 import cn.hutool.extra.qrcode.QrCodeUtil;
 import cn.hutool.http.HttpUtil;
+import com.alibaba.fastjson2.JSON;
 import com.thend03.xiaobot.spider.constants.Constants;
 import com.thend03.xiaobot.spider.model.ArticleDetail;
 import org.apache.commons.collections4.CollectionUtils;
@@ -31,6 +32,12 @@ import java.util.stream.Collectors;
  */
 public class WechatDetailService {
 
+    public static void main(String[] args) {
+        String url = "https://mp.weixin.qq.com/s?__biz=Mzg4MTc0MDcyOA==&mid=2247484196&idx=1&sn=7034ef1197b8658d86cef8db1d04f3a9&chksm=cf601df3f81794e5e074a30892c95c54e1b33fcef5cbea7a4590a95f37652e0f890e72265efb&scene=178&cur_album_id=2262723582487429130#rd";
+        List<String> urlList = getUrlList(url);
+        System.out.println(JSON.toJSONString(urlList));
+    }
+
     public static final AtomicInteger COUNT = new AtomicInteger(1);
 
     public static List<String> getUrlList(String url) {
@@ -43,7 +50,7 @@ public class WechatDetailService {
                 throw new RuntimeException(e);
             }
 
-        }).collect(Collectors.toList());
+        }).filter(StringUtils::isNotBlank).collect(Collectors.toList());
     }
 
     public static List<String> parseImageUrlList(String wechatUrl) {
@@ -53,40 +60,14 @@ public class WechatDetailService {
         List<String> result = new ArrayList<>();
         String content = HttpUtil.downloadString(wechatUrl, StandardCharsets.UTF_8);
         Document parse = Jsoup.parse(content);
-        Elements scripts = parse.getElementsByTag("script");
-        for (Element script : scripts) {
-            List<Node> nodes = script.childNodes();
-            for (Node node : nodes) {
-                if (node instanceof DataNode) {
-                    DataNode dataNode = (DataNode) node;
-                    String wholeData = dataNode.getWholeData();
-                    if (wholeData.contains("cdn_url")) {
-                        String[] split = wholeData.split("var");
-                        for (int i = 0; i < split.length; i++) {
-                            String s = split[i];
-                            if (s.contains("picturePageInfoList") && s.contains("http")) {
-                                String[] split1 = s.split("picturePageInfoList");
-                                String cdnUrl = split1[1];
-                                String s1 = cdnUrl.replaceAll("\\[", "")
-                                        .replaceAll("]", "")
-                                        .replaceAll("\\{", "")
-                                        .replaceAll("}", "")
-                                        .replaceAll("'", "")
-                                        .replaceAll("\"", "");
-                                String[] split2 = s1.split(",");
-                                for (int j = 0; j < split2.length; j++) {
-                                    if (split2[j].contains("cdn_url")) {
-                                        String[] split3 = split2[j].split("cdn_url:");
-                                        result.add(split3[1]);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+
+        Elements imageList = parse.select("img[data-src]");
+        for (Element image : imageList) {
+            String attr = image.attr("data-src");
+            if (StringUtils.isNotBlank(attr) && attr.startsWith("http")) {
+                result.add(attr);
             }
         }
-        System.out.println("end#####");
         return result;
     }
 
@@ -98,6 +79,14 @@ public class WechatDetailService {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        if (StringUtils.isBlank(finalUrl)) {
+            return "";
+        }
+        if (!finalUrl.startsWith("http")) {
+            return "";
+        }
+        String[] split = finalUrl.split("\\?refer");
+        finalUrl = split[0];
         return finalUrl;
     }
 
