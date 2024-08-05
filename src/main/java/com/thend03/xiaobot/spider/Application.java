@@ -19,7 +19,6 @@ import java.util.List;
 public class Application {
     public static void main(String[] args) throws IOException {
         List<ArticleDetail> articleDetails = WechatSubscribeListService.parseArticleList();
-        FileUtils.writeStringToFile(new File("out/detail.json"),JSON.toJSONString(articleDetails), StandardCharsets.UTF_8);
-        System.out.println("end");
+        FileUtils.writeStringToFile(new File("detail.json"),JSON.toJSONString(articleDetails), StandardCharsets.UTF_8);
     }
 }
