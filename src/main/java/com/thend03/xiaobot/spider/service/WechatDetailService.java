@@ -15,11 +15,15 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -137,8 +141,9 @@ public class WechatDetailService {
 
 
     public static String getArticleFullPage(String url) {
+        String driverPath = getDriverPath();
         // 设置 ChromeDriver 路径
-        System.setProperty("webdriver.chrome.driver", Constants.LOCAL_CHROME_DRIVER_PATH);
+        System.setProperty("webdriver.chrome.driver", driverPath);
 
         // 设置 Chrome 选项
         ChromeOptions options = new ChromeOptions();
@@ -309,5 +314,56 @@ public class WechatDetailService {
             result.add(StringUtils.join(subList, ""));
         }
         return result;
+    }
+
+    /**
+     * 根据操作系统选择相应的 chromedriver 文件路径
+     *
+     * @return chromedriver 文件路径
+     */
+    private static String getDriverPath() {
+
+        String osName = System.getProperty("os.name").toLowerCase();
+        String driverFileName;
+
+        String osPath = "";
+
+        if (osName.contains("win")) {
+            driverFileName = "chromedriver.exe";
+            osPath = "chromedriver-win64";
+        } else if (osName.contains("nix") || osName.contains("nux")) {
+            driverFileName = "chromedriver";
+            osPath = "chromedriver-linux64";
+        } else if (osName.contains("mac")) {
+            driverFileName = "chromedriver";
+            osPath = "chromedriver-mac-arm64";
+        } else {
+            throw new UnsupportedOperationException("Unsupported operating system: " + osName);
+        }
+
+        // 从类路径加载驱动程序文件
+        try (InputStream in = WechatDetailService.class.getResourceAsStream("/chromedriver/" + osPath + "/" + driverFileName)) {
+            if (in == null) {
+                throw new IOException("Driver not found in classpath");
+            }
+            // 创建临时文件
+            Path tempFile = Files.createTempFile(null, null);
+            tempFile.toFile().deleteOnExit();
+            try (FileOutputStream out = new FileOutputStream(tempFile.toFile())) {
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, bytesRead);
+                }
+            }
+            // 设置临时文件为可执行
+            File file = tempFile.toFile();
+            if (osName.contains("nix") || osName.contains("nux") || osName.contains("mac")) {
+                file.setExecutable(true);
+            }
+            return file.getAbsolutePath();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load driver", e);
+        }
     }
 }
